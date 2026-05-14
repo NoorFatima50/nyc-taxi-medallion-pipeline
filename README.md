@@ -62,6 +62,7 @@ nyc-taxi-medallion-pipeline/
 ├── 03_gold_aggregation.py       # Business aggregations
 └── README.md
 ```
+<img width="1895" height="910" alt="notebooks" src="https://github.com/user-attachments/assets/42c63e97-d219-4640-86eb-dea9beb5f03c" />
 
 ---
 
@@ -108,6 +109,7 @@ nyc-taxi-medallion-pipeline/
 df_raw = spark.read.parquet("/Volumes/.../yellow_tripdata_2023-01.parquet")
 df_raw.write.format("delta").mode("overwrite").save(".../bronze/taxi_raw")
 ```
+<img width="1887" height="908" alt="bronze table" src="https://github.com/user-attachments/assets/9877950d-423d-4512-a225-5ed218b722d5" />
 
 ---
 
@@ -139,6 +141,7 @@ df_raw.write.format("delta").mode("overwrite").save(".../bronze/taxi_raw")
 df_cleaned = df_bronze.dropna(subset=["passenger_count", "RatecodeID", ...])
 df_cleaned = df_cleaned.filter((col("fare_amount") > 0) & (col("trip_distance") > 0))
 ```
+<img width="1917" height="921" alt="silver table" src="https://github.com/user-attachments/assets/b75d1d0a-e413-4f2b-b6a0-eed8ed150ab8" />
 
 ---
 
@@ -165,6 +168,8 @@ Top 10 busiest pickup zones by trip count.
 **Key insight:** Zone 132 (JFK Airport) has the highest average fare ($60.74) — 4x more than Midtown Manhattan zones due to longer distance trips.
 
 ---
+<img width="1857" height="932" alt="gold table" src="https://github.com/user-attachments/assets/cdcf8c80-ca8b-4b4b-be12-fa75e99c7869" />
+
 
 ## ⚙️ Databricks Workflow
 
@@ -185,6 +190,9 @@ gold_aggregation
 If any task fails, downstream tasks automatically stop — preventing bad data from propagating through the pipeline.
 
 ---
+<img width="1347" height="906" alt="jobs" src="https://github.com/user-attachments/assets/0e1aab0f-e8c7-4a55-a529-ba32f68c6e20" />
+
+
 
 ## 📈 Key Business Insights
 
@@ -243,14 +251,4 @@ git clone https://github.com/NoorFatima50/nyc-taxi-medallion-pipeline.git
 
 ---
 
-## 👩‍💻 Author
 
-**Noor Fatima**  
-Databricks Certified Data Engineer | Full Stack Developer  
-📧 noorfatimabodla@gmail.com  
-🔗 [LinkedIn](https://linkedin.com/in/noor-fatima-shahid)  
-🐙 [GitHub](https://github.com/NoorFatima50)
-
-
-
-This project is open source and available under the [MIT License](LICENSE).
