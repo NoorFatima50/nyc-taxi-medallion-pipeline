@@ -62,7 +62,6 @@ nyc-taxi-medallion-pipeline/
 ├── 03_gold_aggregation.py       # Business aggregations
 └── README.md
 ```
-<img width="1895" height="910" alt="notebooks" src="https://github.com/user-attachments/assets/42c63e97-d219-4640-86eb-dea9beb5f03c" />
 
 ---
 
