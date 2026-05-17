@@ -10,56 +10,58 @@
 
 ## 📌 Project Overview
 
-A production-grade **ETL data pipeline** built on **Databricks** that processes over **3 million NYC Yellow Taxi trips** from raw ingestion through to analytics-ready Gold tables — using the **Medallion Architecture (Bronze → Silver → Gold)**.
+A production-grade **ETL data pipeline** built on **Databricks** that processes over **3 million NYC Yellow Taxi trips** from raw ingestion through to analytics-ready Gold tables.
 
-This project demonstrates real-world data engineering skills including:
-- Incremental data ingestion with **Auto Loader**
-- Data cleaning and validation with **PySpark**
-- Business aggregations with **Delta Lake**
-- Pipeline orchestration with **Databricks Workflows**
+This repository contains **two implementations** of the same medallion architecture — first built manually with PySpark, then rebuilt using **Delta Live Tables (DLT)** — demonstrating both foundational and modern data engineering approaches.
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-Raw Parquet File
-      │
-      ▼
-┌─────────────────┐
-│   BRONZE LAYER  │  ← Raw data preserved as Delta table
-│  3,066,766 rows │    No transformations — raw is raw
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   SILVER LAYER  │  ← Cleaned and validated data
-│  2,884,228 rows │    Nulls removed, bad data filtered
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────────────────┐
-│              GOLD LAYER                 │  ← Analytics-ready tables
-│  ├── fare_by_hour    (24 rows)          │
-│  ├── payment_summary  (4 rows)          │
-│  └── top_pickups     (10 rows)          │
-└─────────────────────────────────────────┘
-         │
-         ▼
-  Databricks Workflow
-  (Scheduled daily at midnight)
+Raw Parquet File (45MB — 3,066,766 rows)
+           │
+           ▼
+┌─────────────────────┐
+│    BRONZE LAYER     │  Raw data preserved as Delta table
+│   3,066,766 rows    │  No transformations — raw is raw
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│    SILVER LAYER     │  Cleaned and validated data
+│   2,884,228 rows    │  Nulls removed, bad data filtered
+│   94.05% quality    │  182,538 rows removed
+└──────────┬──────────┘
+           │
+           ▼
+┌──────────────────────────────────────┐
+│             GOLD LAYER               │  Analytics-ready tables
+│  ├── fare_by_hour      (24 rows)     │  Avg fare by hour of day
+│  ├── payment_summary    (4 rows)     │  Revenue by payment type
+│  └── top_pickups       (10 rows)     │  Busiest pickup zones
+└──────────────────────────────────────┘
+           │
+           ▼
+  Databricks Workflow / DLT Pipeline
+  (Scheduled — runs automatically)
 ```
 
 ---
 
-## 📂 Project Structure
+## 📂 Repository Structure
 
 ```
 nyc-taxi-medallion-pipeline/
 │
-├── 01_bronze_ingestion.py       # Raw data ingestion to Delta
-├── 02_silver_transformation.py  # Data cleaning and validation
-├── 03_gold_aggregation.py       # Business aggregations
+├── project1/                        # Manual PySpark implementation
+│   ├── 01_bronze_ingestion.py       # Raw data ingestion to Delta
+│   ├── 02_silver_transformation.py  # Data cleaning and validation
+│   └── 03_gold_aggregation.py       # Business aggregations
+│
+├── project2/                        # Delta Live Tables implementation
+│   └── transformation.py            # Full DLT pipeline with quality checks
+│
 └── README.md
 ```
 
@@ -69,11 +71,12 @@ nyc-taxi-medallion-pipeline/
 
 | Tool | Purpose |
 |------|---------|
-| **Databricks** | Cloud data platform |
+| **Databricks** | Cloud data platform and pipeline orchestration |
 | **Apache Spark / PySpark** | Distributed data processing |
-| **Delta Lake** | ACID transactions and time travel |
-| **Auto Loader** | Incremental file ingestion |
-| **Databricks Workflows** | Pipeline orchestration and scheduling |
+| **Delta Lake** | ACID transactions, time travel, schema evolution |
+| **Delta Live Tables** | Declarative pipeline framework with quality monitoring |
+| **Auto Loader** | Incremental file ingestion with checkpointing |
+| **Databricks Workflows** | Pipeline scheduling and task orchestration |
 | **Python** | Primary programming language |
 | **SQL** | Data aggregations and queries |
 
@@ -81,98 +84,103 @@ nyc-taxi-medallion-pipeline/
 
 ## 📊 Dataset
 
-**Source:** NYC Yellow Taxi Trip Data — January 2023  
-**Format:** Parquet  
-**Size:** ~45MB / 3,066,766 rows  
-**Columns:** 19 fields including pickup/dropoff timestamps, fare amounts, trip distance, passenger count, payment type, and location IDs
+| Property | Value |
+|----------|-------|
+| Source | NYC Yellow Taxi Trip Data |
+| Period | January 2023 |
+| Format | Parquet |
+| Size | ~45MB |
+| Rows | 3,066,766 |
+| Columns | 19 |
+| Download | [NYC TLC Trip Data](https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-01.parquet) |
 
 ---
 
-## 🔄 Pipeline Details
+## 🥉 Project 1 — Manual PySpark Pipeline
 
-### 🥉 Bronze Layer — `01_bronze_ingestion.py`
+### Bronze Layer — `01_bronze_ingestion.py`
 
 **What it does:**
-- Reads raw parquet file into a PySpark DataFrame
-- Writes data as a **Delta table** with no transformations
-- Preserves raw data exactly as received
-- Records full **Delta history** for time travel and auditing
+- Reads raw parquet file into PySpark DataFrame
+- Writes data as Delta table with zero transformations
+- Records full Delta history for time travel and auditing
+- Demonstrates Auto Loader for incremental file ingestion
 
-**Key concepts demonstrated:**
+**Key concepts:**
 - `spark.read.parquet()` — reading raw files
 - `df.write.format("delta")` — writing Delta tables
-- `DeltaTable.history()` — time travel and lineage
-- Auto Loader with `cloudFiles` for incremental ingestion
-
-```python
-df_raw = spark.read.parquet("/Volumes/.../yellow_tripdata_2023-01.parquet")
-df_raw.write.format("delta").mode("overwrite").save(".../bronze/taxi_raw")
-```
-<img width="1887" height="908" alt="bronze table" src="https://github.com/user-attachments/assets/9877950d-423d-4512-a225-5ed218b722d5" />
+- `DeltaTable.history()` — time travel and lineage tracking
+- Auto Loader with `cloudFiles` for incremental processing
 
 ---
 
-### 🥈 Silver Layer — `02_silver_transformation.py`
+### Silver Layer — `02_silver_transformation.py`
 
 **What it does:**
 - Reads from Bronze Delta table
-- Removes **71,743 null rows** across 5 columns
-- Filters logically invalid data — negative fares, zero distance trips
-- Writes clean data as Silver Delta table
+- Detects and removes null rows across 5 columns
+- Filters logically invalid records
+- Writes clean validated data as Silver Delta table
 
 **Data quality results:**
 
 | Metric | Value |
 |--------|-------|
 | Raw rows (Bronze) | 3,066,766 |
-| Rows removed | 182,538 |
+| Null rows removed | 71,743 |
+| Invalid rows removed | 110,795 |
 | Clean rows (Silver) | 2,884,228 |
 | Data quality score | **94.05%** |
 
 **Cleaning rules applied:**
-- Dropped nulls in `passenger_count`, `RatecodeID`, `store_and_fwd_flag`, `congestion_surcharge`, `airport_fee`
-- Filtered `fare_amount > 0`
-- Filtered `trip_distance > 0`
-- Filtered `passenger_count > 0`
-- Filtered `total_amount > 0`
-
-```python
-df_cleaned = df_bronze.dropna(subset=["passenger_count", "RatecodeID", ...])
-df_cleaned = df_cleaned.filter((col("fare_amount") > 0) & (col("trip_distance") > 0))
-```
-<img width="1917" height="921" alt="silver table" src="https://github.com/user-attachments/assets/b75d1d0a-e413-4f2b-b6a0-eed8ed150ab8" />
+- Dropped nulls: `passenger_count`, `RatecodeID`, `store_and_fwd_flag`, `congestion_surcharge`, `airport_fee`
+- Filtered: `fare_amount > 0`
+- Filtered: `trip_distance > 0`
+- Filtered: `passenger_count > 0`
+- Filtered: `total_amount > 0`
 
 ---
 
-### 🥇 Gold Layer — `03_gold_aggregation.py`
+### Gold Layer — `03_gold_aggregation.py`
 
 **What it does:**
 - Reads from Silver Delta table
-- Builds **3 analytics-ready aggregation tables**
+- Builds 3 analytics-ready aggregation tables
 - Writes each as a separate Gold Delta table
 
-#### Table 1 — `fare_by_hour`
-Average fare, distance, and tip amount grouped by hour of day.
+#### `fare_by_hour` — 24 rows
+Average fare, distance, and tip grouped by hour of day.
 
-**Key insight:** 5 AM has the highest average fare ($26.46) due to airport runs — 6.42 miles average distance vs 1.8 miles during midday.
+| Finding | Value |
+|---------|-------|
+| Most expensive hour | 5 AM — $26.46 avg fare |
+| Reason | Airport runs — 6.42 miles avg distance |
+| Cheapest hour | 11 AM — $17.41 avg fare |
 
-#### Table 2 — `payment_summary`
-Total trips, revenue, and average trip value by payment type.
+#### `payment_summary` — 4 rows
+Total trips and revenue grouped by payment type.
 
-**Key insight:** Credit card payments (81% of trips) generate $4.53 more per trip than cash payments. Total January 2023 revenue: **$78.2M**.
+| Finding | Value |
+|---------|-------|
+| Credit card trips | 2,350,772 (81% of all trips) |
+| Cash trips | 507,944 (19% of all trips) |
+| Credit vs cash spend | Credit card riders spend $4.53 more per trip |
+| Total January revenue | $78.2 million |
 
-#### Table 3 — `top_pickups`
-Top 10 busiest pickup zones by trip count.
+#### `top_pickups` — 10 rows
+Top 10 busiest pickup zones by trip volume.
 
-**Key insight:** Zone 132 (JFK Airport) has the highest average fare ($60.74) — 4x more than Midtown Manhattan zones due to longer distance trips.
+| Finding | Value |
+|---------|-------|
+| Busiest zone | Zone 132 — JFK Airport (152,122 trips) |
+| Highest avg fare | Zone 132 — $60.74 avg fare |
+| Why airports dominate | 15+ mile trips vs 1.8 miles in Midtown |
 
 ---
-<img width="1857" height="932" alt="gold table" src="https://github.com/user-attachments/assets/cdcf8c80-ca8b-4b4b-be12-fa75e99c7869" />
 
+### Databricks Workflow
 
-## ⚙️ Databricks Workflow
-
-The pipeline is fully orchestrated using **Databricks Workflows** with task dependencies:
+Pipeline orchestrated with task dependencies:
 
 ```
 bronze_ingestion
@@ -184,70 +192,144 @@ silver_transformation
 gold_aggregation
 ```
 
-**Schedule:** Daily at 12:00 AM (Asia/Karachi timezone)
-
-If any task fails, downstream tasks automatically stop — preventing bad data from propagating through the pipeline.
+**Schedule:** Daily at 12:00 AM — fully automated.
+If any task fails, downstream tasks automatically stop.
 
 ---
-<img width="1347" height="906" alt="jobs" src="https://github.com/user-attachments/assets/0e1aab0f-e8c7-4a55-a529-ba32f68c6e20" />
 
+## 🔵 Project 2 — Delta Live Tables Pipeline
 
+### `transformation.py`
+
+A complete rewrite of the Project 1 pipeline using **Delta Live Tables** — Databricks' modern declarative pipeline framework.
+
+**What's different from Project 1:**
+
+| | Project 1 | Project 2 |
+|--|-----------|-----------|
+| Approach | Imperative — you write HOW | Declarative — you define WHAT |
+| Dependencies | Managed manually | Managed automatically by DLT |
+| Data quality | Manual filtering | `@dlt.expect` rules with dashboard |
+| Lineage | Manual tracking | Automatic lineage graph |
+| Retries | Manual | Automatic |
+
+**5 Data Quality Expectations:**
+
+```python
+@dlt.expect("valid_fare",       "fare_amount > 0")
+@dlt.expect("valid_distance",   "trip_distance > 0")
+@dlt.expect("valid_passengers", "passenger_count > 0")
+@dlt.expect("valid_total",      "total_amount > 0")
+@dlt.expect("valid_vendor",     "VendorID IS NOT NULL")
+```
+
+DLT automatically tracks pass/fail counts for each rule and displays them in a quality dashboard.
+
+**Pipeline results:**
+
+| Table | Rows | Duration |
+|-------|------|----------|
+| bronze_taxi | 3,066,766 | 6s |
+| silver_taxi | 2,884,228 | 9s |
+| gold_fare_by_hour | 24 | 3s |
+| gold_payment_summary | 4 | 3s |
+| gold_top_pickups | 10 | 3s |
+| **Total pipeline** | | **34s** |
+
+---
 
 ## 📈 Key Business Insights
 
 | Insight | Finding |
 |---------|---------|
-| Most expensive hour | **5 AM** — $26.46 avg fare (airport runs) |
-| Cheapest hour | **11 AM** — $17.41 avg fare |
-| Busiest zone | **Zone 132 (JFK Airport)** — 152,122 trips |
-| Payment preference | **81%** of riders pay by credit card |
-| Credit vs cash | Credit card riders spend **$4.53 more** per trip |
-| Total Jan revenue | **$78.2 million** |
-| Data quality | **94.05%** clean data after validation |
+| Most expensive hour | 5 AM — $26.46 avg fare |
+| Cheapest hour | 11 AM — $17.41 avg fare |
+| Busiest pickup zone | Zone 132 — JFK Airport (152,122 trips) |
+| Highest revenue zone | JFK Airport — $60.74 avg fare per trip |
+| Payment preference | 81% of riders pay by credit card |
+| Credit vs cash | Credit card riders spend $4.53 more per trip |
+| Total January revenue | $78.2 million |
+| Data quality score | 94.05% clean after validation |
 
 ---
 
-## 🚀 How to Run
+## 🚀 How to Run This Project
 
 ### Prerequisites
-- Databricks account (Community Edition works)
-- NYC Taxi dataset uploaded to your Volume
-
-### Steps
-
-1. **Clone this repo**
-```bash
-git clone https://github.com/NoorFatima50/nyc-taxi-medallion-pipeline.git
+- Databricks account — [Community Edition is free](https://community.cloud.databricks.com)
+- Download the dataset:
+```
+https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2023-01.parquet
 ```
 
-2. **Upload to Databricks Workspace**
-   - Import each notebook into your Databricks workspace
+### Setup
 
-3. **Update file paths** in each notebook to match your Volume path:
+**Step 1 — Upload dataset to Databricks**
+- Log into Databricks
+- Go to Catalog → Add Data → Upload files to Volume
+- Create volume named: `taxi-data`
+- Upload the parquet file
+- Your volume path will be:
+```
+/Volumes/workspace/default/taxi-data/yellow_tripdata_2023-01.parquet
+```
+
+**Step 2 — Update file paths**
+
+In every file replace this path with your own volume path:
 ```python
-# Replace this path with your actual Volume path
-"/Volumes/workspace/default/taxi-data/..."
+/Volumes/workspace/default/taxi-data/
 ```
 
-4. **Run notebooks in order:**
+### Running Project 1 — Manual Pipeline
+
+**Option A — Run notebooks individually:**
 ```
-01_bronze_ingestion → 02_silver_transformation → 03_gold_aggregation
+1. Import 01_bronze_ingestion.py into Databricks workspace
+2. Import 02_silver_transformation.py
+3. Import 03_gold_aggregation.py
+4. Run in order: Bronze → Silver → Gold
 ```
 
-5. **Or set up Databricks Workflow** to run automatically with task dependencies
+**Option B — Set up Databricks Workflow:**
+```
+1. Go to Jobs & Pipelines → Create Job
+2. Add three tasks pointing to each notebook
+3. Set dependencies:
+   Silver depends on Bronze
+   Gold depends on Silver
+4. Click Run Now
+```
+
+### Running Project 2 — DLT Pipeline
+
+```
+1. Go to Jobs & Pipelines → Create Pipeline → ETL Pipeline
+2. Upload transformation.py
+3. Name the pipeline: nyc-taxi-dlt-pipeline
+4. Click Run Pipeline
+5. View quality dashboard and pipeline graph
+```
 
 ---
 
 ## 🎓 Skills Demonstrated
 
-- ✅ Medallion Architecture (Bronze → Silver → Gold)
+**Data Engineering:**
+- ✅ Medallion Architecture — Bronze → Silver → Gold
 - ✅ Delta Lake — ACID transactions, time travel, schema evolution
-- ✅ PySpark DataFrames — transformations, aggregations, window functions
-- ✅ Auto Loader — incremental file ingestion with checkpointing
+- ✅ PySpark — DataFrames, transformations, aggregations
+- ✅ Auto Loader — incremental ingestion with checkpointing
+- ✅ Delta Live Tables — declarative pipelines with quality monitoring
 - ✅ Data quality validation — null handling, business rule filtering
 - ✅ Pipeline orchestration — Databricks Workflows with task dependencies
-- ✅ Production practices — proper folder separation, Delta history, error handling
+
+**Best Practices:**
+- ✅ Proper folder separation — raw input vs output
+- ✅ Delta history tracking for full data lineage
+- ✅ Incremental processing — avoids reprocessing old data
+- ✅ Fail-safe pipeline — downstream tasks stop if upstream fails
+- ✅ Clean documented code with clear section separation
 
 ---
-
 
