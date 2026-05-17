@@ -1,12 +1,21 @@
+# ============================================
+# 03 - GOLD AGGREGATION
+# NYC Taxi Medallion Pipeline - Project 1
+# ============================================
+
 from pyspark.sql.functions import hour, round as spark_round, avg, col, count, sum as spark_sum
 
-# Read from Silver Delta table
+# ─────────────────────────────────────────────
+# Cell 1 - Read from Silver Delta table
+# ─────────────────────────────────────────────
 df_silver = spark.read.format("delta").load(
     "/Volumes/workspace/default/taxi-data/silver/taxi_cleaned"
 )
 print(f"Silver rows loaded: {df_silver.count():,}")
 
-# Gold Table 1 — Average fare by hour
+# ─────────────────────────────────────────────
+# Cell 2 - Gold Table 1 — Average fare by hour
+# ─────────────────────────────────────────────
 df_fare_by_hour = df_silver \
     .withColumn("pickup_hour", hour("tpep_pickup_datetime")) \
     .groupBy("pickup_hour") \
@@ -17,7 +26,11 @@ df_fare_by_hour = df_silver \
     ) \
     .orderBy("pickup_hour")
 
-# Gold Table 2 — Payment summary
+df_fare_by_hour.show(24)
+
+# ─────────────────────────────────────────────
+# Cell 3 - Gold Table 2 — Payment summary
+# ─────────────────────────────────────────────
 df_payment = df_silver \
     .groupBy("payment_type") \
     .agg(
@@ -27,7 +40,11 @@ df_payment = df_silver \
     ) \
     .orderBy("payment_type")
 
-# Gold Table 3 — Top pickup locations
+df_payment.show()
+
+# ─────────────────────────────────────────────
+# Cell 4 - Gold Table 3 — Top pickup locations
+# ─────────────────────────────────────────────
 df_top_pickups = df_silver \
     .groupBy("PULocationID") \
     .agg(
@@ -38,7 +55,11 @@ df_top_pickups = df_silver \
     .orderBy(col("total_pickups").desc()) \
     .limit(10)
 
-# Write all three Gold tables
+df_top_pickups.show()
+
+# ─────────────────────────────────────────────
+# Cell 5 - Write all three Gold tables
+# ─────────────────────────────────────────────
 df_fare_by_hour.write \
     .format("delta") \
     .mode("overwrite") \
@@ -59,7 +80,9 @@ print("✅ fare_by_hour")
 print("✅ payment_summary")
 print("✅ top_pickups")
 
-# Confirm all Gold tables
+# ─────────────────────────────────────────────
+# Cell 6 - Confirm all Gold tables
+# ─────────────────────────────────────────────
 df_gold_fares = spark.read.format("delta").load(
     "/Volumes/workspace/default/taxi-data/gold/fare_by_hour"
 )
@@ -70,6 +93,6 @@ df_gold_pickups = spark.read.format("delta").load(
     "/Volumes/workspace/default/taxi-data/gold/top_pickups"
 )
 
-print(f"fare_by_hour rows: {df_gold_fares.count():,}")
-print(f"payment_summary rows: {df_gold_payment.count():,}")
-print(f"top_pickups rows: {df_gold_pickups.count():,}")
+print(f"fare_by_hour rows    : {df_gold_fares.count():,}")
+print(f"payment_summary rows : {df_gold_payment.count():,}")
+print(f"top_pickups rows     : {df_gold_pickups.count():,}")
