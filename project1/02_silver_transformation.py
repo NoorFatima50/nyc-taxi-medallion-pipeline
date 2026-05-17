@@ -31,3 +31,10 @@ df_cleaned.write \
 
 print(f"Silver rows written: {df_cleaned.count():,}")
 print("Silver layer written successfully!")
+
+# Confirm Silver table
+df_silver = spark.read.format("delta").load(
+    "/Volumes/workspace/default/taxi-data/silver/taxi_cleaned"
+)
+print(f"Silver table rows: {df_silver.count():,}")
+df_silver.show(3)
