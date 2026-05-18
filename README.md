@@ -113,6 +113,9 @@ nyc-taxi-medallion-pipeline/
 - Auto Loader with `cloudFiles` for incremental processing
 
 ---
+<img width="1843" height="908" alt="bronze table" src="https://github.com/user-attachments/assets/c114976f-989b-4016-b2a1-ff4c4c76ca2a" />
+
+
 
 ### Silver Layer — `02_silver_transformation.py`
 
@@ -140,6 +143,8 @@ nyc-taxi-medallion-pipeline/
 - Filtered: `total_amount > 0`
 
 ---
+<img width="1864" height="921" alt="silver table" src="https://github.com/user-attachments/assets/64b01606-01a7-41e8-92e5-f5058c150c76" />
+
 
 ### Gold Layer — `03_gold_aggregation.py`
 
@@ -177,6 +182,8 @@ Top 10 busiest pickup zones by trip volume.
 | Why airports dominate | 15+ mile trips vs 1.8 miles in Midtown |
 
 ---
+<img width="1857" height="932" alt="gold table" src="https://github.com/user-attachments/assets/15189418-c5b7-4568-b6ec-e3ef93391fec" />
+
 
 ### Databricks Workflow
 
@@ -196,6 +203,9 @@ gold_aggregation
 If any task fails, downstream tasks automatically stop.
 
 ---
+
+<img width="1347" height="906" alt="jobs" src="https://github.com/user-attachments/assets/5d1ca3b7-54ee-4463-85ca-95641238fd8e" />
+
 
 ## 🔵 Project 2 — Delta Live Tables Pipeline
 
@@ -225,6 +235,9 @@ A complete rewrite of the Project 1 pipeline using **Delta Live Tables** — Dat
 
 DLT automatically tracks pass/fail counts for each rule and displays them in a quality dashboard.
 
+<img width="1317" height="648" alt="dlt graphs" src="https://github.com/user-attachments/assets/786d7086-1557-439a-89d5-673d56c38b47" />
+
+
 **Pipeline results:**
 
 | Table | Rows | Duration |
@@ -237,6 +250,9 @@ DLT automatically tracks pass/fail counts for each rule and displays them in a q
 | **Total pipeline** | | **34s** |
 
 ---
+
+<img width="1903" height="876" alt="dlt tables" src="https://github.com/user-attachments/assets/30b57133-c84b-4983-ba3d-bd512531711c" />
+
 
 ## 📈 Key Business Insights
 
